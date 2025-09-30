@@ -26,7 +26,7 @@ async def start_command(client, message):
         quote=True
     )
 
-# دالة معالجة الملفات الواردة
+# دالة معالجة الملفات الواردة (تم استخدام الطريقة المضمونة لـ export_file_link)
 @app.on_message(filters.media & filters.private)
 async def get_direct_link(client, message):
     initial_message = await message.reply_text("بدء عملية الاستخراج... يرجى الانتظار.", quote=True)
@@ -44,17 +44,13 @@ async def get_direct_link(client, message):
             await initial_message.edit_text("❌ الرجاء إرسال ملف فيديو أو وثيقة فيديو مدعومة فقط.")
             return
 
-        # 1. محاولة الحصول على معلومات الملف (للتأكد من صلاحية الوصول)
-        # هذا يضمن أننا نستطيع الوصول إلى الملف عبر API قبل المحاولة النهائية
-        file_info = await client.get_file(file_object.file_id)
-        
-        # 2. محاولة استخراج الرابط المباشر بالطريقة المضمونة على السيرفر
-        file_link = await client.download_media(file_info, in_memory=True)
+        # **الطريقة النهائية والأكثر ثباتاً:** استخدام export_file_link
+        # هذه الدالة تتجاوز مشاكل الـ async_generator وتُعطي رابط CDN مباشر في العادة.
+        file_link = await client.export_file_link(file_object)
 
-        # التحقق من أن النتيجة هي مسار صالح (يبدأ بـ /media/...) وليس كائن BytesIO
-        if not isinstance(file_link, str) or not file_link.startswith('/'):
+        if not file_link:
             await initial_message.edit_text(
-                "❌ فشل استخراج الرابط المباشر. قد تكون المشكلة في **صلاحيات API** أو أن الملف محمي."
+                "❌ فشل استخراج الرابط المباشر. قد تكون المشكلة في صلاحيات API أو أن الملف محمي."
             )
             return
 
