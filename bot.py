@@ -7,9 +7,9 @@ logging.basicConfig(level=logging.INFO)
 # 🚀 المفاتيح الجديدة والمحدثة
 API_ID = 26238667
 API_HASH = "d37f76cd40cb005e6b47b88c59cc69d9"
-BOT_TOKEN = "8334862751:AAFmBZeoS0xAZ1ZIPXFQgB0P-GNLvZYnHRQ" # رمز البوت الجديد
+BOT_TOKEN = "8334862751:AAFmBZeoS0xAZ1ZIPXFQgB0P-GNLvZYnHRQ" 
 
-# تهيئة البوت (تم تحديث اسم العميل إلى sketchwareX_bot)
+# تهيئة البوت
 app = Client(
     "sketchwareX_bot", 
     api_id=API_ID, 
@@ -26,7 +26,7 @@ async def start_command(client, message):
         quote=True
     )
 
-# دالة معالجة الملفات الواردة (باستخدام export_file_link المضمونة)
+# دالة معالجة الملفات الواردة (باستخدام get_file_url لضمان التوافق)
 @app.on_message(filters.media & filters.private)
 async def get_direct_link(client, message):
     initial_message = await message.reply_text("بدء عملية الاستخراج... يرجى الانتظار.", quote=True)
@@ -34,7 +34,6 @@ async def get_direct_link(client, message):
     try:
         file_object = None
         
-        # تحديد كائن الملف
         if message.video:
             file_object = message.video
         elif message.document and message.document.mime_type.startswith('video'):
@@ -44,12 +43,15 @@ async def get_direct_link(client, message):
             await initial_message.edit_text("❌ الرجاء إرسال ملف فيديو أو وثيقة فيديو مدعومة فقط.")
             return
 
-        # **الخطوة الحاسمة:** استخدام export_file_link مع المفاتيح الجديدة
-        file_link = await client.export_file_link(file_object)
+        # 1. الحصول على معلومات الملف
+        file_info = await client.get_file(file_object.file_id)
+
+        # 2. استخدام دالة get_file_url الأحدث لاستخراج الرابط
+        file_link = await client.get_file_url(file_info)
 
         if not file_link:
             await initial_message.edit_text(
-                "❌ فشل استخراج الرابط المباشر. يرجى مراجعة صلاحيات API."
+                "❌ فشل استخراج الرابط المباشر. يرجى مراجعة سجلات Railway."
             )
             return
 
@@ -60,9 +62,8 @@ async def get_direct_link(client, message):
         logging.info(f"Successfully generated link for user: {message.from_user.id}")
             
     except Exception as e:
-        # رسالة في حال حدوث خطأ
         logging.error(f"Error processing message: {e}")
-        await initial_message.edit_text(f"❌ فشل استخراج الرابط. يرجى مراجعة سجلات Railway. (تفاصيل الخطأ: {str(e)})")
+        await initial_message.edit_text(f"❌ فشل استخراج الرابط. (تفاصيل الخطأ: {str(e)})")
 
 # تشغيل البوت
 if __name__ == '__main__':
