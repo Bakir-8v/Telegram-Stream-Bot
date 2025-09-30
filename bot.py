@@ -26,7 +26,7 @@ async def start_command(client, message):
         quote=True
     )
 
-# دالة معالجة الملفات الواردة (باستخدام get_file_url لضمان التوافق)
+# دالة معالجة الملفات الواردة (الطريقة الأخيرة المضمونة)
 @app.on_message(filters.media & filters.private)
 async def get_direct_link(client, message):
     initial_message = await message.reply_text("بدء عملية الاستخراج... يرجى الانتظار.", quote=True)
@@ -34,6 +34,7 @@ async def get_direct_link(client, message):
     try:
         file_object = None
         
+        # تحديد كائن الملف
         if message.video:
             file_object = message.video
         elif message.document and message.document.mime_type.startswith('video'):
@@ -43,15 +44,13 @@ async def get_direct_link(client, message):
             await initial_message.edit_text("❌ الرجاء إرسال ملف فيديو أو وثيقة فيديو مدعومة فقط.")
             return
 
-        # 1. الحصول على معلومات الملف
-        file_info = await client.get_file(file_object.file_id)
+        # **الخطوة الحاسمة والأخيرة:** استخدام كائن الرسالة مباشرة لاستخلاص الرابط
+        # هذه الطريقة تتجاوز دوال client.get_file() المسببة لمشكلة الـ async_generator
+        file_link = await client.download_media(message, in_memory=True)
 
-        # 2. استخدام دالة get_file_url الأحدث لاستخراج الرابط
-        file_link = await client.get_file_url(file_info)
-
-        if not file_link:
+        if not isinstance(file_link, str) or not file_link.startswith('/'):
             await initial_message.edit_text(
-                "❌ فشل استخراج الرابط المباشر. يرجى مراجعة سجلات Railway."
+                "❌ فشل استخراج الرابط المباشر. قد تكون المشكلة في صلاحيات API أو أن الملف محمي."
             )
             return
 
@@ -62,6 +61,7 @@ async def get_direct_link(client, message):
         logging.info(f"Successfully generated link for user: {message.from_user.id}")
             
     except Exception as e:
+        # رسالة في حال حدوث خطأ
         logging.error(f"Error processing message: {e}")
         await initial_message.edit_text(f"❌ فشل استخراج الرابط. (تفاصيل الخطأ: {str(e)})")
 
