@@ -32,25 +32,27 @@ async def get_direct_link(client, message):
     initial_message = await message.reply_text("بدء عملية الاستخراج... يرجى الانتظار.", quote=True)
     
     try:
-        file_info = None
+        file_object = None
         
-        # تحديد كائن الملف file_info بناءً على نوع الميديا
+        # تحديد كائن الملف
         if message.video:
-            file_info = message.video
+            file_object = message.video
         elif message.document and message.document.mime_type.startswith('video'):
-             file_info = message.document
+             file_object = message.document
         
-        if file_info is None:
+        if file_object is None:
             await initial_message.edit_text("❌ الرجاء إرسال ملف فيديو أو وثيقة فيديو مدعومة فقط.")
             return
 
-        # **الطريقة الأكثر استقراراً:** استخدام download_media مع in_memory=True
-        # هذه الدالة ترجع الرابط المباشر (CDN Link) في بيئات السيرفر المستقرة
-        file_link = await client.download_media(file_info, in_memory=True)
+        # 1. محاولة الحصول على معلومات الملف (للتأكد من صلاحية الوصول)
+        # هذا يضمن أننا نستطيع الوصول إلى الملف عبر API قبل المحاولة النهائية
+        file_info = await client.get_file(file_object.file_id)
         
-        # التحقق من أن النتيجة هي رابط صحيح (وليس كائن BytesIO أو مولّد)
+        # 2. محاولة استخراج الرابط المباشر بالطريقة المضمونة على السيرفر
+        file_link = await client.download_media(file_info, in_memory=True)
+
+        # التحقق من أن النتيجة هي مسار صالح (يبدأ بـ /media/...) وليس كائن BytesIO
         if not isinstance(file_link, str) or not file_link.startswith('/'):
-            # إذا فشل الاستخراج، نعتبر أن المشكلة هي في صلاحية الوصول (API Hash)
             await initial_message.edit_text(
                 "❌ فشل استخراج الرابط المباشر. قد تكون المشكلة في **صلاحيات API** أو أن الملف محمي."
             )
@@ -65,7 +67,7 @@ async def get_direct_link(client, message):
     except Exception as e:
         # رسالة في حال حدوث خطأ
         logging.error(f"Error processing message: {e}")
-        await initial_message.edit_text(f"❌ حدث خطأ أثناء استخراج الرابط. يرجى المحاولة مرة أخرى. (تفاصيل الخطأ: {str(e)})")
+        await initial_message.edit_text(f"❌ فشل استخراج الرابط. يرجى مراجعة سجلات Railway. (تفاصيل الخطأ: {str(e)})")
 
 # تشغيل البوت
 if __name__ == '__main__':
