@@ -4,14 +4,14 @@ import logging
 # إعدادات بسيطة لتسجيل الأخطاء
 logging.basicConfig(level=logging.INFO)
 
-# ⚠️ المفاتيح الخاصة بك - تم دمجها مباشرةً
-API_ID = 24186368
-API_HASH = "828bc85c425b3cdf00b53adb1bf4af8c"
-BOT_TOKEN = "8017200832:AAGkoi8RkCmBsHQnuCJDq6YOiMwa8jEPobk" 
+# 🚀 المفاتيح الجديدة والمحدثة
+API_ID = 26238667
+API_HASH = "d37f76cd40cb005e6b47b88c59cc69d9"
+BOT_TOKEN = "8334862751:AAFmBZeoS0xAZ1ZIPXFQgB0P-GNLvZYnHRQ" # رمز البوت الجديد
 
-# تهيئة البوت
+# تهيئة البوت (تم تحديث اسم العميل إلى sketchwareX_bot)
 app = Client(
-    "stream_link_bot", 
+    "sketchwareX_bot", 
     api_id=API_ID, 
     api_hash=API_HASH, 
     bot_token=BOT_TOKEN
@@ -26,7 +26,7 @@ async def start_command(client, message):
         quote=True
     )
 
-# دالة معالجة الملفات الواردة (تم استخدام الطريقة المضمونة لـ export_file_link)
+# دالة معالجة الملفات الواردة (باستخدام export_file_link المضمونة)
 @app.on_message(filters.media & filters.private)
 async def get_direct_link(client, message):
     initial_message = await message.reply_text("بدء عملية الاستخراج... يرجى الانتظار.", quote=True)
@@ -44,13 +44,12 @@ async def get_direct_link(client, message):
             await initial_message.edit_text("❌ الرجاء إرسال ملف فيديو أو وثيقة فيديو مدعومة فقط.")
             return
 
-        # **الطريقة النهائية والأكثر ثباتاً:** استخدام export_file_link
-        # هذه الدالة تتجاوز مشاكل الـ async_generator وتُعطي رابط CDN مباشر في العادة.
+        # **الخطوة الحاسمة:** استخدام export_file_link مع المفاتيح الجديدة
         file_link = await client.export_file_link(file_object)
 
         if not file_link:
             await initial_message.edit_text(
-                "❌ فشل استخراج الرابط المباشر. قد تكون المشكلة في صلاحيات API أو أن الملف محمي."
+                "❌ فشل استخراج الرابط المباشر. يرجى مراجعة صلاحيات API."
             )
             return
 
